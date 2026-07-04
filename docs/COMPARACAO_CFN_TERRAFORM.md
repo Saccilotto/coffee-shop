@@ -1,6 +1,6 @@
 # CloudFormation × Terraform — a mesma infra, duas ferramentas
 
-Material do bloco de IaC (André). As duas árvores descrevem **exatamente a
+Material do bloco de IaC. As duas árvores descrevem **exatamente a
 mesma infraestrutura** (rede + computação do caminho IaaS):
 
 - `infra/cloudformation/01-network.yaml` + `02-compute.yaml` — usadas de verdade na PoC
