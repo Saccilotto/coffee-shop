@@ -25,7 +25,7 @@ params_for() {
 }
 
 deploy_stack() {
-  local name=$1 template=$2; shift 2
+  local name=$1; shift
   local overrides=("$@")
   echo "==> Stack $STACK_PREFIX-$name"
   local args=(

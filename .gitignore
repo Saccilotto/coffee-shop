@@ -68,3 +68,6 @@ dist/
 .env
 .env.*
 !deploy/env/*.env
+
+# --- Editor/assistente local ---
+.claude/
