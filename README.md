@@ -89,13 +89,4 @@ make teardown          # destroi tudo, em ordem reversa
 - [docs/CUSTOS_E_TEARDOWN.md](docs/CUSTOS_E_TEARDOWN.md) — custo/hora de cada peça e disciplina de teardown
 - [docs/LIMITACOES.md](docs/LIMITACOES.md) — Cloud9, CodeCommit, agente CodeDeploy × Ubuntu 24.04, SQLite
 
-## Equipe (Grupo 8)
-
-| Integrante | Serviços | Bloco da demo |
-| --- | --- | --- |
-| André Sacilotto | CloudFormation + comparação com Terraform | IaC e provisionamento |
-| Davi Kniest | CodeCommit + CodeDeploy | Do código ao deploy (CI/CD, rollback) |
-| Willian Albeche | Elastic Beanstalk | Deploy gerenciado / PaaS |
-| Aloysio Winter | Systems Manager + CloudShell | Operação e ambiente de dev |
-
 Tags padrão de todos os recursos: `Project=coffee-shop`, `Team=grupo8`, `Env=demo`.

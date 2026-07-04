@@ -1,0 +1,44 @@
+[
+  {
+    "slug": "espresso",
+    "name": "Espresso",
+    "description": "Shot unico, compilado sem warnings.",
+    "price_cents": 700,
+    "stock": 50
+  },
+  {
+    "slug": "duplo",
+    "name": "Espresso Duplo",
+    "description": "Dois shots para builds longas.",
+    "price_cents": 1200,
+    "stock": 40
+  },
+  {
+    "slug": "coado",
+    "name": "Cafe Coado",
+    "description": "V60 da casa, torra media do cerrado.",
+    "price_cents": 900,
+    "stock": 60
+  },
+  {
+    "slug": "latte",
+    "name": "Latte",
+    "description": "Espresso com leite vaporizado e espuma fina.",
+    "price_cents": 1500,
+    "stock": 30
+  },
+  {
+    "slug": "cold-brew",
+    "name": "Cold Brew",
+    "description": "12 horas de extracao a frio, servido gelado.",
+    "price_cents": 1600,
+    "stock": 25
+  },
+  {
+    "slug": "descafeinado-404",
+    "name": "Descafeinado 404",
+    "description": "Cafeina nao encontrada.",
+    "price_cents": 1000,
+    "stock": 20
+  }
+]
