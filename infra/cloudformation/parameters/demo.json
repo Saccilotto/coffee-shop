@@ -1,0 +1,11 @@
+{
+  "02-compute": {
+    "InstanceType": "t3.micro",
+    "KeyName": ""
+  },
+  "04-beanstalk": {
+    "InstanceType": "t3.micro",
+    "MinInstances": "1",
+    "MaxInstances": "2"
+  }
+}

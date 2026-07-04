@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  coffee-shop 02-compute: EC2 Ubuntu 22.04 (caminho IaaS), instance profile
+  com SSM + leitura de artefatos S3 + parametros /coffee-shop/*, UserData
+  instala o agente CodeDeploy. Ubuntu 22.04 e nao 24.04: o agente CodeDeploy
+  nao suporta Noble (docs/LIMITACOES.md).
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Default: coffee-shop-01-network
+    Description: Nome da stack 01-network (origem dos ImportValue)
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+    Description: Ubuntu 22.04 LTS resolvido via SSM public parameter (nunca hardcodar AMI)
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium]
+    Description: t3.micro basta para a coffee-api (custo minimo)
+  KeyName:
+    Type: String
+    Default: ''
+    Description: >-
+      Key pair OPCIONAL (default vazio = sem chave). Mantido apenas para o
+      slide de comparacao com o Terraform do Mineclifford; o acesso
+      administrativo e via Session Manager, sem porta 22.
+
+Conditions:
+  HasKeyName: !Not [!Equals [!Ref KeyName, '']]
+
+Resources:
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: coffee-shop EC2 - SSM core + artefatos CodeDeploy + parametros da app
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: coffee-shop-artifacts-read
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadDeployArtifacts
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::coffee-shop-artifacts-${AWS::AccountId}-${AWS::Region}'
+                  - !Sub 'arn:aws:s3:::coffee-shop-artifacts-${AWS::AccountId}-${AWS::Region}/*'
+        - PolicyName: coffee-shop-parameters-read
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadAppParameters
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/coffee-shop/*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  ApiInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      KeyName: !If [HasKeyName, !Ref KeyName, !Ref 'AWS::NoValue']
+      IamInstanceProfile: !Ref InstanceProfile
+      SubnetId:
+        Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnetId'
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-AppSecurityGroupId'
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 20
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y ruby-full wget python3-venv python3-pip
+
+          # Usuario de servico da aplicacao
+          id -u coffee &>/dev/null || useradd --system --create-home --shell /usr/sbin/nologin coffee
+          mkdir -p /opt/coffee-shop /etc/coffee-shop
+          chown coffee:coffee /opt/coffee-shop
+
+          # Agente CodeDeploy (bucket regional oficial)
+          cd /tmp
+          wget -q https://aws-codedeploy-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/latest/install
+          chmod +x ./install
+          ./install auto
+          systemctl enable --now codedeploy-agent
+
+          # SSM agent ja vem na AMI Ubuntu (snap amazon-ssm-agent); nada a fazer.
+      Tags:
+        - Key: Name
+          Value: coffee-shop-api-iaas
+        - Key: Role
+          Value: api-iaas
+
+Outputs:
+  InstanceId:
+    Value: !Ref ApiInstance
+  PublicIp:
+    Description: IP dinamico (sem EIP de proposito - EIP parado cobra)
+    Value: !GetAtt ApiInstance.PublicIp
+  ApiUrl:
+    Value: !Sub 'http://${ApiInstance.PublicIp}:8000'
