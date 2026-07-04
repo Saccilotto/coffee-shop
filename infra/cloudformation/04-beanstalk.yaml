@@ -1,0 +1,154 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  coffee-shop 04-beanstalk: a MESMA coffee-api como PaaS - application,
+  application version e environment load-balanced (ALB, min 1 max 2
+  t3.micro). O ALB cobra por hora: criar somente em janela de ensaio/demo e
+  destruir no teardown. SolutionStackName sempre resolvido em tempo de
+  deploy por scripts/resolve-solution-stack.sh, nunca hardcodado.
+
+Parameters:
+  SolutionStackName:
+    Type: String
+    Description: Plataforma Python/AL2023 mais recente (resolve-solution-stack.sh)
+  ArtifactBucket:
+    Type: String
+    Description: Bucket de artefatos (criado pela stack 03-cicd)
+  ArtifactKey:
+    Type: String
+    Description: Chave S3 do zip da aplicacao (app/ + Procfile + requirements.txt)
+  VersionLabel:
+    Type: String
+    Description: Rotulo da versao publicada (ex. v-20260704120000)
+  InstanceType:
+    Type: String
+    Default: t3.micro
+  MinInstances:
+    Type: String
+    Default: '1'
+  MaxInstances:
+    Type: String
+    Default: '2'
+
+Resources:
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Service role do Elastic Beanstalk (coffee-shop)
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: elasticbeanstalk.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth
+        - arn:aws:iam::aws:policy/AWSElasticBeanstalkManagedUpdatesCustomerRolePolicy
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Role das instancias do environment Beanstalk (coffee-shop)
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: coffee-shop-parameters-read
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadAppParameters
+                Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/coffee-shop/*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  Application:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: coffee-shop-api
+      Description: coffee-api como PaaS (bloco Elastic Beanstalk da demo)
+
+  AppVersion:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName: !Ref Application
+      Description: !Ref VersionLabel
+      SourceBundle:
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Ref ArtifactKey
+
+  Environment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref Application
+      EnvironmentName: coffee-shop-paas
+      Description: Environment load-balanced da coffee-api
+      SolutionStackName: !Ref SolutionStackName
+      VersionLabel: !Ref AppVersion
+      Tier:
+        Name: WebServer
+        Type: Standard
+      OptionSettings:
+        - Namespace: aws:elasticbeanstalk:environment
+          OptionName: EnvironmentType
+          Value: LoadBalanced
+        - Namespace: aws:elasticbeanstalk:environment
+          OptionName: LoadBalancerType
+          Value: application
+        - Namespace: aws:elasticbeanstalk:environment
+          OptionName: ServiceRole
+          Value: !Ref ServiceRole
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: IamInstanceProfile
+          Value: !Ref InstanceProfile
+        - Namespace: aws:ec2:instances
+          OptionName: InstanceTypes
+          Value: !Ref InstanceType
+        - Namespace: aws:autoscaling:asg
+          OptionName: MinSize
+          Value: !Ref MinInstances
+        - Namespace: aws:autoscaling:asg
+          OptionName: MaxSize
+          Value: !Ref MaxInstances
+        - Namespace: aws:elasticbeanstalk:environment:process:default
+          OptionName: HealthCheckPath
+          Value: /health
+        - Namespace: aws:elasticbeanstalk:healthreporting:system
+          OptionName: SystemType
+          Value: enhanced
+        # A plataforma Python AL2023 e WSGI por default; o Procfile
+        # (gunicorn + UvicornWorker em :8000) e quem sobe a app ASGI, e o
+        # nginx da plataforma faz o proxy 80 -> 8000.
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: COFFEE_PLATFORM
+          Value: paas
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: COFFEE_DB_PATH
+          Value: /tmp/coffee.db
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: AWS_DEFAULT_REGION
+          Value: !Ref AWS::Region
+
+Outputs:
+  EnvironmentName:
+    Value: !Ref Environment
+  EndpointUrl:
+    Description: URL do ALB do environment (usar em /coffee-shop/api-url)
+    Value: !Sub 'http://${Environment.EndpointURL}'
