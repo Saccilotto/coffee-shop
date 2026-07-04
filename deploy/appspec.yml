@@ -1,0 +1,26 @@
+# Raiz do bundle CodeDeploy (montado por scripts/package-codedeploy.sh).
+# Ciclo: ApplicationStop -> Install(files) -> AfterInstall -> ApplicationStart
+# -> ValidateService. Se ValidateService falhar, o deployment group faz
+# rollback automatico para a revisao anterior.
+version: 0.0
+os: linux
+
+files:
+  - source: api
+    destination: /opt/coffee-shop/api
+  - source: deploy
+    destination: /opt/coffee-shop/deploy
+
+hooks:
+  ApplicationStop:
+    - location: deploy/scripts/stop_server.sh
+      timeout: 60
+  AfterInstall:
+    - location: deploy/scripts/install_dependencies.sh
+      timeout: 300
+  ApplicationStart:
+    - location: deploy/scripts/start_server.sh
+      timeout: 60
+  ValidateService:
+    - location: deploy/scripts/validate_service.sh
+      timeout: 120

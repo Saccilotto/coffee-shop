@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  coffee-shop 03-cicd: bucket S3 de artefatos (versionado), application e
+  deployment group do CodeDeploy com rollback automatico em falha. O grupo
+  seleciona instancias por tag (Project=coffee-shop + Role=api-iaas), nunca
+  por instance ID.
+
+Resources:
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'coffee-shop-artifacts-${AWS::AccountId}-${AWS::Region}'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Service role do CodeDeploy (coffee-shop)
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codedeploy.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+
+  Application:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: coffee-shop
+      ComputePlatform: Server
+
+  DeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref Application
+      DeploymentGroupName: coffee-shop-api-iaas
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      Ec2TagSet:
+        Ec2TagSetList:
+          - Ec2TagGroup:
+              - Key: Project
+                Value: coffee-shop
+                Type: KEY_AND_VALUE
+          - Ec2TagGroup:
+              - Key: Role
+                Value: api-iaas
+                Type: KEY_AND_VALUE
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events:
+          - DEPLOYMENT_FAILURE
+
+Outputs:
+  ArtifactsBucketName:
+    Value: !Ref ArtifactsBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-ArtifactsBucketName'
+  ApplicationName:
+    Value: !Ref Application
+  DeploymentGroupName:
+    Value: !Ref DeploymentGroup
