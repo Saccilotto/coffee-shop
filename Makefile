@@ -13,7 +13,7 @@ UVICORN := $(VENV)/bin/uvicorn
 
 .DEFAULT_GOAL := help
 
-.PHONY: help venv test run-local lint package deploy-infra deploy-api-iaas \
+.PHONY: help venv test run-local lint package preflight deploy-infra deploy-api-iaas \
         deploy-eb seed-params demo-rollback mirror-codecommit teardown clean
 
 help: ## Lista os alvos disponiveis
@@ -37,6 +37,9 @@ lint: venv ## cfn-lint nos templates + compileall no Python
 
 package: ## Monta o bundle CodeDeploy em build/ (sem upload)
 	./scripts/package-codedeploy.sh --no-upload
+
+preflight: ## Checagens read-only da conta antes do deploy (identidade, servicos, IAM)
+	./scripts/preflight.sh
 
 deploy-infra: ## [PAGO] Cria/atualiza stacks CloudFormation 01-03 (rede, EC2, CI/CD)
 	./scripts/deploy-infra.sh

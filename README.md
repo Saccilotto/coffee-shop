@@ -68,11 +68,14 @@ ambiente e defaults locais — cache de 30 s (`api/app/config.py`).
 
 ## Fluxo de deploy na AWS
 
-> **Pré-requisitos:** AWS CLI v2 configurado (conta pessoal, `us-east-1`),
-> permissões de administrador. **Todos os alvos `deploy-*` criam recursos
-> pagos.** Termine toda sessão com `make teardown`.
+> **Pré-requisitos:** AWS CLI v2 configurado (`us-east-1`) com credencial de
+> usuário IAM com permissões amplas. Runbook completo de deploy (inclusive as
+> adaptações para usuário IAM não-root) em **[GUIDE.md](GUIDE.md)**.
+> **Todos os alvos `deploy-*` criam recursos pagos.** Termine toda sessão com
+> `make teardown`.
 
 ```bash
+make preflight         # checagens read-only da conta (rode antes de tudo)
 make deploy-infra      # stacks 01-network, 02-compute, 03-cicd
 make seed-params       # parametros /coffee-shop/* no SSM
 make deploy-api-iaas   # bundle CodeDeploy -> EC2  (caminho IaaS)
@@ -83,6 +86,7 @@ make teardown          # destroi tudo, em ordem reversa
 
 ## Documentação
 
+- [GUIDE.md](GUIDE.md) — runbook de deploy numa conta com usuário IAM + fluxo de teste/apresentação
 - [docs/ARQUITETURA.md](docs/ARQUITETURA.md) — diagrama e narrativa dev→commit→provision→deploy→operate
 - [docs/ROTEIRO_DEMO.md](docs/ROTEIRO_DEMO.md) — passo a passo por integrante, com comandos e tempos
 - [docs/COMPARACAO_CFN_TERRAFORM.md](docs/COMPARACAO_CFN_TERRAFORM.md) — CloudFormation × Terraform, recurso a recurso
