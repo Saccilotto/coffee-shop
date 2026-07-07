@@ -8,7 +8,8 @@
 # Finalize toda sessao com ./scripts/teardown.sh.
 set -euo pipefail
 
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}"
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 cd "$(dirname "$0")/.."
 
 CFN_DIR=infra/cloudformation

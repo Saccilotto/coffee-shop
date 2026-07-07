@@ -2,7 +2,9 @@
 # Alvos locais nao tocam a AWS. Alvos deploy-* criam recursos pagos: rode
 # conscientemente e finalize toda sessao com `make teardown`.
 
-AWS_DEFAULT_REGION ?= us-east-1
+# Regiao: respeita AWS_DEFAULT_REGION do ambiente; senao segue a regiao do
+# perfil da CLI (ex.: us-east-2 na conta nova); em ultimo caso, us-east-1.
+AWS_DEFAULT_REGION ?= $(shell aws configure get region 2>/dev/null || echo us-east-1)
 export AWS_DEFAULT_REGION
 
 VENV    := .venv

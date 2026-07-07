@@ -8,7 +8,8 @@
 #   ./scripts/seed-parameters.sh --with-api-url  -> tambem grava /coffee-shop/api-url
 #                                                   com a URL do environment Beanstalk
 set -euo pipefail
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}"
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 put() {
   local name=$1 value=$2

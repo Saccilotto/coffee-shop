@@ -1,3 +1,9 @@
+variable "aws_region" {
+  description = "Regiao AWS. Default us-east-1 (padrao do projeto); use us-east-2 na conta nova."
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "vpc_cidr" {
   description = "CIDR da VPC (mesmo valor da stack 01-network)"
   type        = string

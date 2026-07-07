@@ -9,7 +9,8 @@
 #
 # Idempotente: cria o repo so se nao existir, reconfigura o remote e faz push.
 set -euo pipefail
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}"
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 REPO=coffee-shop
 cd "$(dirname "$0")/.."

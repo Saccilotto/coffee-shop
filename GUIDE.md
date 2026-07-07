@@ -40,7 +40,8 @@ mesmo — admin é o caminho honesto e sem surpresa no meio do deploy.
 
 ```bash
 # 1. Credenciais do usuário IAM (access key + secret da aba "Security
-#    credentials" do usuário no console IAM). Região us-east-1.
+#    credentials" do usuário no console IAM). Região: us-east-2 nesta conta
+#    (veja "Região" abaixo); us-east-1 é o default do projeto.
 aws configure                      # perfil default
 #   ou, para manter separado de outras contas:
 aws configure --profile grupo8 && export AWS_PROFILE=grupo8
@@ -57,12 +58,43 @@ make venv
 ```
 
 `AWS_PROFILE` é respeitado tanto pela CLI quanto pelo boto3 da API, então todos
-os `make deploy-*` e scripts usam o perfil que estiver ativo. Os scripts já
-forçam `AWS_DEFAULT_REGION=us-east-1`.
+os `make deploy-*` e scripts usam o perfil que estiver ativo.
 
 > **MFA / SSO:** se o usuário exige MFA para chamadas de API, gere uma sessão
 > temporária (`aws sts get-session-token …`) e exporte as três variáveis, ou
 > use um perfil SSO. O restante do fluxo não muda.
+
+### Região (us-east-1 é o default; esta conta usa us-east-2)
+
+O projeto **não é mais preso a us-east-1**. A região é resolvida assim, em
+ordem de prioridade:
+
+1. variável de ambiente `AWS_DEFAULT_REGION` (se exportada, vence tudo);
+2. região do perfil da CLI (`aws configure get region`);
+3. `us-east-1` como último fallback.
+
+Os templates CloudFormation já eram region-agnostic (`${AWS::Region}`, AMI e
+solution stack resolvidas por região); a EC2 descobre a própria região via IMDS
+para ler os parâmetros SSM; o provider do Terraform usa `var.aws_region`. Ou
+seja: **basta a região do perfil estar certa** e tudo segue junto.
+
+```bash
+# Conta nova: deixar o perfil em us-east-2 (uma vez) — nada mais a fazer:
+aws configure set region us-east-2
+make preflight                     # deve imprimir "regiao us-east-2"
+
+# Alternativa pontual, sem mexer no perfil (vence o perfil):
+export AWS_DEFAULT_REGION=us-east-2
+```
+
+Regras de bolso ao trocar de região:
+
+- **Deploy e teardown na MESMA região.** O `teardown.sh` opera na região ativa;
+  se você subiu em us-east-2, rode o teardown com o perfil/variável em us-east-2,
+  senão ele não encontra as stacks.
+- Os links de console impressos (CodeCommit, etc.) já seguem `$AWS_DEFAULT_REGION`.
+- Terraform em outra região: `terraform apply -var aws_region=us-east-2` (ou
+  deixe o default us-east-1 para o `plan` de comparação do bloco do André).
 
 ## 3. Preflight (antes de gastar tempo/dinheiro)
 

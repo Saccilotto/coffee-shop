@@ -15,7 +15,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 
   # Equivalente Terraform das --tags aplicadas as stacks CloudFormation:
   # aqui a propagacao e feita pelo provider, la pelo servico de stacks.

@@ -68,9 +68,10 @@ ambiente e defaults locais — cache de 30 s (`api/app/config.py`).
 
 ## Fluxo de deploy na AWS
 
-> **Pré-requisitos:** AWS CLI v2 configurado (`us-east-1`) com credencial de
-> usuário IAM com permissões amplas. Runbook completo de deploy (inclusive as
-> adaptações para usuário IAM não-root) em **[GUIDE.md](GUIDE.md)**.
+> **Pré-requisitos:** AWS CLI v2 com credencial de usuário IAM com permissões
+> amplas. A região segue o perfil da CLI (`aws configure get region`), com
+> fallback para `us-east-1`. Runbook completo de deploy (inclusive as
+> adaptações para usuário IAM não-root e troca de região) em **[GUIDE.md](GUIDE.md)**.
 > **Todos os alvos `deploy-*` criam recursos pagos.** Termine toda sessão com
 > `make teardown`.
 

@@ -2,7 +2,8 @@
 # Preflight READ-ONLY: valida se a credencial atual consegue subir a PoC numa
 # conta nova (usuario IAM). Nao cria, nao altera e nao apaga nada. Rode antes
 # de `make deploy-infra` para nao descobrir falta de permissao no meio do deploy.
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}"
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 FAIL=0; WARN=0
 ok()   { printf '  \033[32mOK\033[0m    %s\n' "$1"; }

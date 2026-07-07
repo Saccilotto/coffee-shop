@@ -3,7 +3,8 @@
 # A string exata ("64bit Amazon Linux 2023 v4.x.y running Python 3.x") muda a
 # cada release da plataforma — por isso nunca e hardcodada nos templates.
 set -euo pipefail
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}"
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 STACK=$(aws elasticbeanstalk list-available-solution-stacks \
   --query "SolutionStacks[?contains(@, 'Amazon Linux 2023') && contains(@, 'running Python')] | [0]" \
